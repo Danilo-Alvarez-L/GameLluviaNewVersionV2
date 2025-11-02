@@ -27,4 +27,5 @@ public interface GameContext {
     int getPuntajeActual();
     int getVidasMaximas();
     
+    
 }
