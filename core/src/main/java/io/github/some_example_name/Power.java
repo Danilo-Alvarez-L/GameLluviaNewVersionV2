@@ -35,5 +35,5 @@ public interface Power {
     /**
      * Verifica si el poder ha expirado :p.
      */
-    boolean isFinished();
+    boolean isFinished(); //:p
 }

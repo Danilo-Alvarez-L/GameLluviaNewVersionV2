@@ -22,7 +22,7 @@ public interface GameContext {
     // Métodos para el Spawner
     void pausarSpawn(boolean pausa);
 
-    // Métodos para obtener estado (útil para la Gota Roja)
+    // Métodos para obtener estado (útil para la Gota Roja):d
     int getVidasActuales();
     int getPuntajeActual();
     int getVidasMaximas();
