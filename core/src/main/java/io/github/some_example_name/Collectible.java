@@ -64,5 +64,5 @@ public abstract class Collectible {
     public float getY() {
         return bounds.y;
     }
-    // :p:p
+    // :p
 }

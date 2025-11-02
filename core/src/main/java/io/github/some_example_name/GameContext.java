@@ -28,4 +28,5 @@ public interface GameContext {
     int getVidasMaximas();
     
     
+    
 }
