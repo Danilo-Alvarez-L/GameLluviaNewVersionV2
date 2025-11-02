@@ -33,7 +33,7 @@ public interface Power {
     void update(float delta);
 
     /**
-     * Verifica si el poder ha expirado.
+     * Verifica si el poder ha expirado :p.
      */
     boolean isFinished();
 }
