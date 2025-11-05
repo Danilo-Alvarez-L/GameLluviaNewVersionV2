@@ -7,11 +7,11 @@ import com.badlogic.gdx.graphics.Texture;
  * Esto permite que los poderes (Escudo, Limpiar Pantalla) caigan como ítems.
  * Cumple con GM1.4 (es una hija de Collectible).
  */
-public class CollectiblePowerUp extends Collectible {
+public class ColleciblePowerUp extends Collectible {
 
     private String powerId; // "SHIELD" o "CLEAN_SCREEN"
 
-    public CollectiblePowerUp(Texture texture, float x, float y, String powerId) {
+    public ColleciblePowerUp(Texture texture, float x, float y, String powerId) {
         // Le damos un TypeId único para poder identificarlo
         super(texture, x, y, "POWER_UP_" + powerId); 
         this.powerId = powerId;

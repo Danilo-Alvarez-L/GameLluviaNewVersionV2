@@ -17,8 +17,7 @@ public interface GameContext {
     void setShieldActive(boolean active);
     void cleanScreen();
     void setGodMode(boolean active);
-    void activatePower(String powerId); // <-- ESTA ES LA LÍNEA NUEVA
-
+    void activatePower(String powerId); 
     // Métodos para el Spawner
     void pausarSpawn(boolean pausa);
 

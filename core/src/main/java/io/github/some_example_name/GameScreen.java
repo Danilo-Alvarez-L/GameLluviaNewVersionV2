@@ -41,6 +41,8 @@ public class GameScreen implements Screen, GameContext {
 	private Texture effectShieldTexture;
 	
 	private Sound dropSound;
+	private Sound hurtSound; // <-- MODIFICADO (Movido aquí para usarlo en toda la clase)
+	private Sound grayDropSound; // <-- MODIFICADO (Declarado el nuevo sonido)
 	private Music rainMusic;
 	private boolean spawnPaused = false;
 	// -----------------------------------------------------------------
@@ -72,7 +74,12 @@ public class GameScreen implements Screen, GameContext {
          dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
 	     rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
 
-		  Sound hurtSound = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg"));
+		  hurtSound = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg")); // <-- MODIFICADO (Se asigna a la variable de la clase)
+		  
+		  // --- ¡AQUÍ ESTÁ TU NUEVO SONIDO! ---
+		  grayDropSound = Gdx.audio.newSound(Gdx.files.internal("soundgray.wav")); // <-- MODIFICADO
+		  // ------------------------------------
+		  
 		  // Le pasamos la textura del efecto de escudo al Tarro
 		  tarro = new Tarro(new Texture(Gdx.files.internal("bucket.png")), hurtSound, effectShieldTexture);
          
@@ -87,7 +94,7 @@ public class GameScreen implements Screen, GameContext {
 	      
 	      tarro.crear();
 	      spawnCollectible(); // Crear la primera gota
-		  
+	      rainMusic.setVolume(0.5f);
 		  rainMusic.setLooping(true);
 	      rainMusic.play();
 	}
@@ -130,9 +137,9 @@ public class GameScreen implements Screen, GameContext {
 
 		// 50/50 chance para cualquiera de los dos poderes
 		if (MathUtils.randomBoolean()) {
-			powerUp = new CollectiblePowerUp(powerShieldPickupTexture, x, y, "SHIELD");
+			powerUp = new ColleciblePowerUp(powerShieldPickupTexture, x, y, "SHIELD");
 		} else {
-			powerUp = new CollectiblePowerUp(powerCleanPickupTexture, x, y, "CLEAN_SCREEN");
+			powerUp = new ColleciblePowerUp(powerCleanPickupTexture, x, y, "CLEAN_SCREEN");
 		}
 		collectibles.add(powerUp);
 	}
@@ -217,10 +224,17 @@ public class GameScreen implements Screen, GameContext {
 			if(drop.overlaps(tarro.getArea())) {
 				drop.onCollected(this); // GM1.4 y GM1.6 (Polimorfismo y Contexto)
 				
-				// Simular sonido de gota buena (azul, roja o powerup)
+				// --- ¡BLOQUE DE SONIDO MODIFICADO! ---
 				if (drop.getTypeId().equals("BLUE") || drop.getTypeId().equals("RED_LIFE") || drop.getTypeId().startsWith("POWER_UP")) {
 					dropSound.play();
 				}
+				else if (drop.getTypeId().equals("GRAY")) { // <-- MODIFICADO
+					grayDropSound.play(); // ¡Tu nuevo sonido!
+				}
+				else if (drop.getTypeId().equals("BLACK")) { // <-- MODIFICADO
+					hurtSound.play(); // Sonido de daño
+				}
+				// --- FIN DEL BLOQUE ---
 				
 				iter.remove();
 			} else {
@@ -271,6 +285,8 @@ public class GameScreen implements Screen, GameContext {
 	public void dispose() {
       tarro.destruir();
       dropSound.dispose();
+	  hurtSound.dispose(); // <-- MODIFICADO (Añadido)
+	  grayDropSound.dispose(); // <-- MODIFICADO (Añadido)
       rainMusic.dispose();
 	  dropTexture.dispose();
 	  dropBadTexture.dispose();

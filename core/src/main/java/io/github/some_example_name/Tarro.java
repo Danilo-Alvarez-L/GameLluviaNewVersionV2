@@ -66,8 +66,8 @@ public class Tarro {
 		      bucket.x = 800 / 2 - 64 / 2;
 		      bucket.y = 20;
 		      // El tamaño del tarro es 64x64
-		      bucket.width = 64;
-		      bucket.height = 64;
+		      bucket.width = 96;
+		      bucket.height = 96;
 	   }
 	   
 	   public void dañar() {

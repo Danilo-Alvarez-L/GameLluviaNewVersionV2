@@ -22,7 +22,7 @@ public abstract class Collectible {
         this.texture = texture;
         this.typeId = typeId;
         // Definimos el tamaño de colisión y dibujo en 64x64
-        this.bounds = new Rectangle(x, y, 64, 64); 
+        this.bounds = new Rectangle(x, y, 48, 48); 
     }
 
     /**
