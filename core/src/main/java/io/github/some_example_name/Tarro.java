@@ -117,8 +117,12 @@ public class Tarro {
 	    
 
 	public void destruir() {
-		    bucketImage.dispose();
-	   }
+        // --- INICIO DE LA MODIFICACIÓN (Singleton GM2.1) ---
+		// La textura del 'bucketImage' ya no es propiedad de esta clase,
+		// sino del Singleton 'Assets'. Por lo tanto, Tarro NO debe liberarla.
+	    // bucketImage.dispose(); // <-- LÍNEA ELIMINADA
+        // --- FIN DE LA MODIFICACIÓN ---
+	}
 	
    public boolean estaHerido() {
 	   return herido;

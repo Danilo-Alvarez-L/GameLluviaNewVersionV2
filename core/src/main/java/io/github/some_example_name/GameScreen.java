@@ -29,11 +29,10 @@ public class GameScreen implements Screen, GameContext {
 	private Array<Collectible> collectibles;
     private long lastDropTime;
 	
-    // Texturas existentes
-    private Texture dropTexture; // Gota azul
-    private Texture dropBadTexture; // Gota negra
-	
-	// Texturas NUEVAS
+    // --- INICIO DE LA MODIFICACIÓN (Singleton GM2.1) ---
+    // Estas variables ahora solo guardan la referencia, no crean el objeto
+    private Texture dropTexture;
+    private Texture dropBadTexture;
 	private Texture dropGrayTexture;
 	private Texture dropRedTexture;
 	private Texture powerCleanPickupTexture;
@@ -41,11 +40,12 @@ public class GameScreen implements Screen, GameContext {
 	private Texture effectShieldTexture;
 	
 	private Sound dropSound;
-	private Sound hurtSound; // <-- MODIFICADO (Movido aquí para usarlo en toda la clase)
-	private Sound grayDropSound; // <-- MODIFICADO (Declarado el nuevo sonido)
+	private Sound hurtSound;
+	private Sound grayDropSound;
 	private Music rainMusic;
+    // --- FIN DE LA MODIFICACIÓN ---
+
 	private boolean spawnPaused = false;
-	// -----------------------------------------------------------------
 	
 	// --- SISTEMAS AÑADIDOS PARA GM1.5 y GM1.6 ---
 	private PowerManager powerManager;
@@ -60,28 +60,25 @@ public class GameScreen implements Screen, GameContext {
         this.batch = game.getBatch();
         this.font = game.getFont();
 		  
-	      // Cargar texturas existentes
-         dropTexture = new Texture(Gdx.files.internal("drop.png"));
-         dropBadTexture = new Texture(Gdx.files.internal("dropBad.png"));
-		 
-		 // Cargar las nuevas texturas
-         dropGrayTexture = new Texture(Gdx.files.internal("drop_gray.png"));
-		 dropRedTexture = new Texture(Gdx.files.internal("drop_red_life.png")); 
-		 powerCleanPickupTexture = new Texture(Gdx.files.internal("power_clean_screen.png"));
-		 effectShieldTexture = new Texture(Gdx.files.internal("power_shield_effect.png"));
-		 powerShieldPickupTexture = new Texture(Gdx.files.internal("drop_shield.png"));
-		 
-         dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
-	     rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
+        // --- INICIO DE LA MODIFICACIÓN (Singleton GM2.1) ---
+        // Obtenemos los assets desde el manager del Singleton
+        dropTexture = Assets.getInstance().manager.get("drop.png", Texture.class);
+        dropBadTexture = Assets.getInstance().manager.get("dropBad.png", Texture.class);
+        dropGrayTexture = Assets.getInstance().manager.get("drop_gray.png", Texture.class);
+        dropRedTexture = Assets.getInstance().manager.get("drop_red_life.png", Texture.class);
+        powerCleanPickupTexture = Assets.getInstance().manager.get("power_clean_screen.png", Texture.class);
+        effectShieldTexture = Assets.getInstance().manager.get("power_shield_effect.png", Texture.class);
+        powerShieldPickupTexture = Assets.getInstance().manager.get("drop_shield.png", Texture.class);
 
-		  hurtSound = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg")); // <-- MODIFICADO (Se asigna a la variable de la clase)
-		  
-		  // --- ¡AQUÍ ESTÁ TU NUEVO SONIDO! ---
-		  grayDropSound = Gdx.audio.newSound(Gdx.files.internal("soundgray.wav")); // <-- MODIFICADO
-		  // ------------------------------------
-		  
-		  // Le pasamos la textura del efecto de escudo al Tarro
-		  tarro = new Tarro(new Texture(Gdx.files.internal("bucket.png")), hurtSound, effectShieldTexture);
+        dropSound = Assets.getInstance().manager.get("drop.wav", Sound.class);
+        hurtSound = Assets.getInstance().manager.get("hurt.ogg", Sound.class);
+        grayDropSound = Assets.getInstance().manager.get("soundgray.wav", Sound.class);
+        rainMusic = Assets.getInstance().manager.get("rain.mp3", Music.class);
+        
+        // Creamos el Tarro pasándole las texturas ya cargadas desde el Singleton
+        Texture bucketTexture = Assets.getInstance().manager.get("bucket.png", Texture.class);
+        tarro = new Tarro(bucketTexture, hurtSound, effectShieldTexture);
+        // --- FIN DE LA MODIFICACIÓN ---
          
 		  // Inicializar sistemas de GM1.4, GM1.5, GM1.6
 		  collectibles = new Array<>();
@@ -284,19 +281,25 @@ public class GameScreen implements Screen, GameContext {
 	@Override
 	public void dispose() {
       tarro.destruir();
-      dropSound.dispose();
-	  hurtSound.dispose(); // <-- MODIFICADO (Añadido)
-	  grayDropSound.dispose(); // <-- MODIFICADO (Añadido)
-      rainMusic.dispose();
-	  dropTexture.dispose();
-	  dropBadTexture.dispose();
+      
+      // --- INICIO DE LA MODIFICACIÓN (Singleton GM2.1) ---
+      // Ya NO liberamos los assets aquí. El Singleton (Assets.java)
+      // se encargará de esto cuando se cierre el juego (en GameLluviaNewVersionV2.dispose())
+      
+      // dropSound.dispose();
+	  // hurtSound.dispose();
+	  // grayDropSound.dispose();
+      // rainMusic.dispose();
+	  // dropTexture.dispose();
+	  // dropBadTexture.dispose();
 	  
-	  // Disponer los nuevos assets
-	  dropGrayTexture.dispose();
-	  dropRedTexture.dispose();
-	  powerCleanPickupTexture.dispose();
-	  powerShieldPickupTexture.dispose();
-	  effectShieldTexture.dispose();
+	  // // Disponer los nuevos assets
+	  // dropGrayTexture.dispose();
+	  // dropRedTexture.dispose();
+	  // powerCleanPickupTexture.dispose();
+	  // powerShieldPickupTexture.dispose();
+	  // effectShieldTexture.dispose();
+      // --- FIN DE LA MODIFICACIÓN ---
 	}
 	
 	// --- IMPLEMENTACIÓN DE INTERFAZ GAMECONTEXT (GM1.6) ---
