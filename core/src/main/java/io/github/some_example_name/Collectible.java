@@ -3,13 +3,12 @@ package io.github.some_example_name;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.Gdx;
 
 /**
  * Clase Abstracta para todos los objetos coleccionables (Gotas).
  * Cubre: GM1.4 (Clase abstracta)
  * Cubre: GM1.6 (Encapsulamiento de campos)
+ * Cubre: GM2.2 (Template Method)
  */
 public abstract class Collectible {
 
@@ -25,10 +24,33 @@ public abstract class Collectible {
         this.bounds = new Rectangle(x, y, 48, 48); 
     }
 
+    // --- PATRÓN TEMPLATE METHOD (GM2.2) ---
+    
     /**
-     * GM1.4: Método abstracto que las clases hijas DEBEN implementar.
+     * Método Plantilla (Template Method).
+     * Define el esqueleto del algoritmo de recolección.
+     * Es 'final' para que las subclases no puedan cambiar el orden de los pasos.
      */
-    public abstract void onCollected(GameContext ctx);
+    public final void collect(GameContext ctx) {
+        // Paso 1: Aplicar el efecto (Score, Vida, Poder)
+        applyEffect(ctx);
+        
+        // Paso 2: Reproducir el sonido característico
+        playSound();
+    }
+
+    /**
+     * Operación Primitiva 1: Efecto específico de la gota.
+     * (Este reemplaza al antiguo onCollected)
+     */
+    protected abstract void applyEffect(GameContext ctx);
+
+    /**
+     * Operación Primitiva 2: Sonido específico de la gota.
+     */
+    protected abstract void playSound();
+
+    // ---------------------------------------
 
     /**
      * Actualiza la posición de la gota (caída).
@@ -39,11 +61,9 @@ public abstract class Collectible {
 
     /**
      * Dibuja la gota en pantalla.
-     * (MODIFICADO para forzar el tamaño 64x64)
      */
     public void draw(SpriteBatch batch) {
-        // Le decimos a batch.draw que dibuje la textura (sin importar su tamaño)
-        // en la posición (bounds.x, bounds.y) y con el tamaño (bounds.width, bounds.height)
+        // Dibujamos con el tamaño definido en bounds
         batch.draw(texture, bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
@@ -64,5 +84,4 @@ public abstract class Collectible {
     public float getY() {
         return bounds.y;
     }
-    // :p
 }

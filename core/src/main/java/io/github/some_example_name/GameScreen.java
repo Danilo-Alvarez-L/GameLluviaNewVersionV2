@@ -10,13 +10,11 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.TimeUtils;
 import java.util.Iterator; 
 
-// GM1.6: GameScreen implementa la interfaz de contexto para bajo acoplamiento
 public class GameScreen implements Screen, GameContext {
 	
 	final GameLluviaNewVersionV2 game;
@@ -25,79 +23,70 @@ public class GameScreen implements Screen, GameContext {
 	private BitmapFont font;
 	private Tarro tarro;
 	
-	// --- LÓGICA DE COLLECTIBLE (reemplaza a Lluvia.java) ---
+	// --- LÓGICA DE JUEGO ---
 	private Array<Collectible> collectibles;
     private long lastDropTime;
+    private boolean spawnPaused = false;
 	
-    // --- INICIO DE LA MODIFICACIÓN (Singleton GM2.1) ---
-    // Estas variables ahora solo guardan la referencia, no crean el objeto
-    private Texture dropTexture;
-    private Texture dropBadTexture;
-	private Texture dropGrayTexture;
-	private Texture dropRedTexture;
-	private Texture powerCleanPickupTexture;
-	private Texture powerShieldPickupTexture;
-	private Texture effectShieldTexture;
-	
-	private Sound dropSound;
-	private Sound hurtSound;
-	private Sound grayDropSound;
-	private Music rainMusic;
-    // --- FIN DE LA MODIFICACIÓN ---
-
-	private boolean spawnPaused = false;
-	
-	// --- SISTEMAS AÑADIDOS PARA GM1.5 y GM1.6 ---
+    // --- PATRONES DE DISEÑO ---
+    // GM2.4 Abstract Factory: Delegamos la creación de objetos a la fábrica
+    private DropFactory dropFactory;
+    
+    // GM2.3 Strategy: Delegamos la gestión de poderes al manager
 	private PowerManager powerManager;
+	
+    // GM1.6: Módulo de GodMode
 	private GodModeToggle godModeToggle;
 	
-	// --- LÓGICA DE PUNTUACIÓN (Petición 3) ---
+	// Música de fondo
+	private Music rainMusic;
+	// Sonido de daño para el tarro (los demás sonidos van en las gotas)
+	private Sound hurtSound; 
+
+	// Puntuación para el próximo PowerUp
 	private int nextPowerUpScore = 500;
-	// -------------------------------------------------
 
 	public GameScreen(final GameLluviaNewVersionV2 game) {
 		this.game = game;
         this.batch = game.getBatch();
         this.font = game.getFont();
 		  
-        // --- INICIO DE LA MODIFICACIÓN (Singleton GM2.1) ---
-        // Obtenemos los assets desde el manager del Singleton
-        dropTexture = Assets.getInstance().manager.get("drop.png", Texture.class);
-        dropBadTexture = Assets.getInstance().manager.get("dropBad.png", Texture.class);
-        dropGrayTexture = Assets.getInstance().manager.get("drop_gray.png", Texture.class);
-        dropRedTexture = Assets.getInstance().manager.get("drop_red_life.png", Texture.class);
-        powerCleanPickupTexture = Assets.getInstance().manager.get("power_clean_screen.png", Texture.class);
-        effectShieldTexture = Assets.getInstance().manager.get("power_shield_effect.png", Texture.class);
-        powerShieldPickupTexture = Assets.getInstance().manager.get("drop_shield.png", Texture.class);
-
-        dropSound = Assets.getInstance().manager.get("drop.wav", Sound.class);
-        hurtSound = Assets.getInstance().manager.get("hurt.ogg", Sound.class);
-        grayDropSound = Assets.getInstance().manager.get("soundgray.wav", Sound.class);
+        // Obtener música desde el Singleton Assets (GM2.1)
         rainMusic = Assets.getInstance().manager.get("rain.mp3", Music.class);
+        hurtSound = Assets.getInstance().manager.get("hurt.ogg", Sound.class);
         
-        // Creamos el Tarro pasándole las texturas ya cargadas desde el Singleton
+        // Inicializar la Fábrica (GM2.4)
+        dropFactory = new DropFactory();
+        
+        // Crear el Tarro (obteniendo texturas del Singleton)
         Texture bucketTexture = Assets.getInstance().manager.get("bucket.png", Texture.class);
-        tarro = new Tarro(bucketTexture, hurtSound, effectShieldTexture);
-        // --- FIN DE LA MODIFICACIÓN ---
+        Texture shieldTexture = Assets.getInstance().manager.get("power_shield_effect.png", Texture.class);
+        
+        tarro = new Tarro(bucketTexture, hurtSound, shieldTexture);
          
-		  // Inicializar sistemas de GM1.4, GM1.5, GM1.6
-		  collectibles = new Array<>();
-		  powerManager = new PowerManager(this); // GM1.6 (Composición)
-		  godModeToggle = new GodModeToggle(this); // GM1.6
+		// Inicializar listas y gestores
+		collectibles = new Array<>();
+		powerManager = new PowerManager(this);
+		godModeToggle = new GodModeToggle(this);
 	      
-	      // camera
-	      camera = new OrthographicCamera();
-	      camera.setToOrtho(false, 800, 480);
+	    // Cámara
+	    camera = new OrthographicCamera();
+	    camera.setToOrtho(false, 800, 480);
 	      
-	      tarro.crear();
-	      spawnCollectible(); // Crear la primera gota
-	      rainMusic.setVolume(0.5f);
-		  rainMusic.setLooping(true);
-	      rainMusic.play();
+	    tarro.crear();
+	    
+	    // Iniciar música
+	    rainMusic.setVolume(0.5f);
+		rainMusic.setLooping(true);
+	    rainMusic.play();
+	      
+	    // Crear la primera gota
+	    spawnCollectible(); 
 	}
 	
 	/**
-	 * Crea un nuevo collectible (gota) y lo añade a la lista.
+	 * Crea un nuevo collectible usando la Fábrica (GM2.4).
+	 * Ya no hay 'new DropBlue()' aquí, todo pasa por dropFactory.
 	 */
 	private void spawnCollectible() {
 		if (spawnPaused) return;
@@ -106,16 +95,16 @@ public class GameScreen implements Screen, GameContext {
 		float y = 480;
 		
 		Collectible newDrop = null;
-		int type = MathUtils.random(1, 100); // Rango 1-100 para probabilidad
+		int type = MathUtils.random(1, 100); // Probabilidad 1-100
 		
 		if (type <= 40) { // 40% Gota Azul
-			newDrop = new DropBlue(dropTexture, x, y);
+			newDrop = dropFactory.createDrop("BLUE", x, y);
 		} else if (type <= 70) { // 30% Gota Negra
-			newDrop = new DropBlack(dropBadTexture, x, y);
+			newDrop = dropFactory.createDrop("BLACK", x, y);
 		} else if (type <= 90) { // 20% Gota Gris
-			newDrop = new DropGray(dropGrayTexture, x, y); 
-		} else { // 10% Gota Roja (Vida)
-			newDrop = new LifeDropRed(dropRedTexture, x, y);
+			newDrop = dropFactory.createDrop("GRAY", x, y); 
+		} else { // 10% Gota Roja
+			newDrop = dropFactory.createDrop("RED", x, y);
 		}
 		
 		if (newDrop != null) {
@@ -125,122 +114,91 @@ public class GameScreen implements Screen, GameContext {
 	}
 	
 	/**
-	 * Spawnea un Power-Up aleatorio
+	 * Spawnea un Power-Up usando la Fábrica (GM2.4).
 	 */
 	private void spawnPowerUp() {
 		float x = MathUtils.random(0, 800-64);
 		float y = 480;
 		Collectible powerUp;
 
-		// 50/50 chance para cualquiera de los dos poderes
 		if (MathUtils.randomBoolean()) {
-			powerUp = new ColleciblePowerUp(powerShieldPickupTexture, x, y, "SHIELD");
+			powerUp = dropFactory.createDrop("POWER_SHIELD", x, y);
 		} else {
-			powerUp = new ColleciblePowerUp(powerCleanPickupTexture, x, y, "CLEAN_SCREEN");
+			powerUp = dropFactory.createDrop("POWER_CLEAN", x, y);
 		}
-		collectibles.add(powerUp);
+		
+		if (powerUp != null) {
+		    collectibles.add(powerUp);
+		}
 	}
 	
-	/**
-	 * Revisa input del teclado para testing (GodMode, Poderes)
-	 */
 	private void checkInput() {
-		// Control de GodMode (GM1.6) - Tecla "G"
 		if (Gdx.input.isKeyJustPressed(Input.Keys.G)) {
 			godModeToggle.toggle();
 		}
-		
-		// Control de Power-ups (Ejemplo para probar)
-		// Tecla "S" para Shield
+		// Debug: Spawneamos poderes manualmente para probar
 		if (Gdx.input.isKeyJustPressed(Input.Keys.S)) {
 			powerManager.addPower(new PowerShield());
 		}
-		// Tecla "C" para CleanScreen
 		if (Gdx.input.isKeyJustPressed(Input.Keys.C)) {
 			powerManager.addPower(new PowerCleanScreen());
 		}
 	}
 	
-	/**
-	 * Revisa si el puntaje alcanzó el hito para un power-up
-	 */
 	private void checkPowerUpSpawn() {
 		if (tarro.getPuntos() >= nextPowerUpScore) {
 			spawnPowerUp();
-			nextPowerUpScore += 500; // Define el siguiente hito (1000, 1500, ...)
+			nextPowerUpScore += 500; 
 		}
 	}
 
 	@Override
 	public void render(float delta) {
-		//limpia la pantalla con color azul obscuro.
 		ScreenUtils.clear(0, 0, 0.2f, 1);
-		//actualizar matrices de la cámara
 		camera.update();
-		//actualizar 
 		batch.setProjectionMatrix(camera.combined);
 		
-		// Revisar input de teclado
 		checkInput();
-		
-		// Revisar si debemos spawnear un power-up
 		checkPowerUpSpawn();
 		
-		// Actualizar PowerManager (GM1.5 / GM1.6)
-		// ¡IMPORTANTE! Esto AHORA aplica los poderes pendientes
+		// Actualizar PowerManager (GM2.3 Strategy)
 		powerManager.update(delta);
 		
 		batch.begin();
 		
-		//dibujar textos
 		font.draw(batch, "Gotas totales: " + tarro.getPuntos(), 5, 475);
 		font.draw(batch, "Vidas : " + tarro.getVidas(), 670, 475);
 		font.draw(batch, "HighScore : " + game.getHigherScore(), camera.viewportWidth/2-50, 475);
 		
 		if (!tarro.estaHerido()) {
-			// movimiento del tarro desde teclado
 	        tarro.actualizarMovimiento();
 		}
 		
-		// Spawneo de collectibles (gotas)
-		// Frecuencia aumentada a 0.8s
+		// Spawneo de gotas
 		if(TimeUtils.nanoTime() - lastDropTime > 800000000) spawnCollectible(); 
 		
-		// Actualizar y dibujar collectibles (GM1.4)
+		// --- BUCLE PRINCIPAL DE JUEGO ---
 		Iterator<Collectible> iter = collectibles.iterator();
 		while (iter.hasNext()) {
 			Collectible drop = iter.next();
-			drop.update(delta); // Mover la gota
+			drop.update(delta);
 			
-			// Si la gota cae al suelo (se sale de la pantalla por abajo)
+			// Si cae al suelo
 			if(drop.getY() + 64 < 0) { 
 				iter.remove();
 			}
-			
-			// Si la gota colisiona con el tarro
-			if(drop.overlaps(tarro.getArea())) {
-				drop.onCollected(this); // GM1.4 y GM1.6 (Polimorfismo y Contexto)
-				
-				// --- ¡BLOQUE DE SONIDO MODIFICADO! ---
-				if (drop.getTypeId().equals("BLUE") || drop.getTypeId().equals("RED_LIFE") || drop.getTypeId().startsWith("POWER_UP")) {
-					dropSound.play();
-				}
-				else if (drop.getTypeId().equals("GRAY")) { // <-- MODIFICADO
-					grayDropSound.play(); // ¡Tu nuevo sonido!
-				}
-				else if (drop.getTypeId().equals("BLACK")) { // <-- MODIFICADO
-					hurtSound.play(); // Sonido de daño
-				}
-				// --- FIN DEL BLOQUE ---
-				
+			// Si colisiona con el tarro
+			else if(drop.overlaps(tarro.getArea())) {
+                // --- GM2.2: TEMPLATE METHOD ---
+                // Llamamos a collect(). La gota misma decide qué sonido hacer 
+                // y qué efecto aplicar (vida, puntos, poder).
+				drop.collect(this); 
 				iter.remove();
 			} else {
-				// Solo dibujamos la gota si no fue recolectada
 				drop.draw(batch);
 			}
 		}
 		
-		// Dibujar tarro (Ahora Tarro.java se encarga de dibujar el escudo si está activo)
 		tarro.dibujar(batch);
 
 		batch.end();
@@ -281,40 +239,19 @@ public class GameScreen implements Screen, GameContext {
 	@Override
 	public void dispose() {
       tarro.destruir();
-      
-      // --- INICIO DE LA MODIFICACIÓN (Singleton GM2.1) ---
-      // Ya NO liberamos los assets aquí. El Singleton (Assets.java)
-      // se encargará de esto cuando se cierre el juego (en GameLluviaNewVersionV2.dispose())
-      
-      // dropSound.dispose();
-	  // hurtSound.dispose();
-	  // grayDropSound.dispose();
-      // rainMusic.dispose();
-	  // dropTexture.dispose();
-	  // dropBadTexture.dispose();
-	  
-	  // // Disponer los nuevos assets
-	  // dropGrayTexture.dispose();
-	  // dropRedTexture.dispose();
-	  // powerCleanPickupTexture.dispose();
-	  // powerShieldPickupTexture.dispose();
-	  // effectShieldTexture.dispose();
-      // --- FIN DE LA MODIFICACIÓN ---
+      // Los assets se liberan en el Singleton Assets.dispose(), no aquí.
 	}
 	
 	// --- IMPLEMENTACIÓN DE INTERFAZ GAMECONTEXT (GM1.6) ---
 
 	@Override
 	public void sumarPuntaje(int puntos) {
-		// La interfaz usa 'sumarPuntaje' (con J)
-		// La clase Tarro usa 'sumarPuntos' (con S)
-		// Este método sirve como "traductor"
-		tarro.sumarPuntos(puntos); // <-- CORREGIDO A 'S'
+		tarro.sumarPuntos(puntos); 
 	}
 
 	@Override
 	public void restarPuntaje(int puntos) {
-		tarro.restarPuntos(puntos); // (Asegúrate que 'restarPuntos' exista en Tarro)
+		tarro.restarPuntos(puntos);
 	}
 
 	@Override
@@ -332,9 +269,6 @@ public class GameScreen implements Screen, GameContext {
 		tarro.setShieldActive(active);
 	}
 
-	/**
-	 * Lógica de CleanScreen (GM1.5)
-	 */
 	@Override
 	public void cleanScreen() {
 		int puntosGanados = 0;
@@ -345,30 +279,20 @@ public class GameScreen implements Screen, GameContext {
 			Collectible drop = iter.next();
 			String type = drop.getTypeId();
 			
-			// Gota Roja es inmune
+			// Gota Roja es inmune al clean screen
 			if (type.equals("RED_LIFE")) {
 				continue;
 			}
 			
-			// Sumar puntos de gotas azules (con tope)
 			if (type.equals("BLUE") && puntosGanados < topePuntos) {
 				puntosGanados += 10; 
 				iter.remove();
 			}
 			
-			// Eliminar gotas malas (negras y grises)
-			if (type.equals("BLACK") || type.equals("GRAY")) {
-				iter.remove();
-			}
-			
-			// Eliminar ítems de Power-Up de la pantalla
-			if (type.startsWith("POWER_UP")) {
+			if (type.equals("BLACK") || type.equals("GRAY") || type.startsWith("POWER_UP")) {
 				iter.remove();
 			}
 		}
-		
-		// --- ¡AQUÍ ESTÁ LA LÍNEA CORREGIDA! ---
-		// Debe ser 'sumarPuntos' (con S) para coincidir con Tarro.java
 		tarro.sumarPuntos(Math.min(puntosGanados, topePuntos));
 	}
 
@@ -399,8 +323,6 @@ public class GameScreen implements Screen, GameContext {
 	
 	@Override
 	public void activatePower(String powerId) {
-		// GameScreen recibe la señal del CollectiblePowerUp
-		// y le dice al PowerManager qué poder activar.
 		if (powerId.equals("SHIELD")) {
 			powerManager.addPower(new PowerShield());
 		} else if (powerId.equals("CLEAN_SCREEN")) {
