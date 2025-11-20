@@ -29,126 +29,108 @@ public class GameScreen implements Screen, GameContext {
     private boolean spawnPaused = false;
 	
     // --- PATRONES DE DISEÑO ---
-    // GM2.4 Abstract Factory: Delegamos la creación de objetos a la fábrica
     private DropFactory dropFactory;
-    
-    // GM2.3 Strategy: Delegamos la gestión de poderes al manager
 	private PowerManager powerManager;
-	
-    // GM1.6: Módulo de GodMode
 	private GodModeToggle godModeToggle;
 	
-	// Música de fondo
+	// --- AUDIO ---
 	private Music rainMusic;
-	// Sonido de daño para el tarro (los demás sonidos van en las gotas)
 	private Sound hurtSound; 
 
-	// Puntuación para el próximo PowerUp
+	// --- PUNTUACIÓN Y BOSS ---
 	private int nextPowerUpScore = 500;
+	private Boss boss;
+	private boolean bossDefeated = false;
 
 	public GameScreen(final GameLluviaNewVersionV2 game) {
 		this.game = game;
         this.batch = game.getBatch();
         this.font = game.getFont();
 		  
-        // Obtener música desde el Singleton Assets (GM2.1)
+        // Cargar recursos desde el Singleton
         rainMusic = Assets.getInstance().manager.get("rain.mp3", Music.class);
         hurtSound = Assets.getInstance().manager.get("hurt.ogg", Sound.class);
         
-        // Inicializar la Fábrica (GM2.4)
+        // Inicializar Fábrica y Managers
         dropFactory = new DropFactory();
         
-        // Crear el Tarro (obteniendo texturas del Singleton)
         Texture bucketTexture = Assets.getInstance().manager.get("bucket.png", Texture.class);
         Texture shieldTexture = Assets.getInstance().manager.get("power_shield_effect.png", Texture.class);
-        
         tarro = new Tarro(bucketTexture, hurtSound, shieldTexture);
+        
+        // Inicializar Boss con su textura
+        Texture bossTexture = Assets.getInstance().manager.get("boss.png", Texture.class);
+        boss = new Boss(bossTexture);
          
-		// Inicializar listas y gestores
 		collectibles = new Array<>();
 		powerManager = new PowerManager(this);
 		godModeToggle = new GodModeToggle(this);
 	      
-	    // Cámara
 	    camera = new OrthographicCamera();
 	    camera.setToOrtho(false, 800, 480);
 	      
 	    tarro.crear();
 	    
-	    // Iniciar música
 	    rainMusic.setVolume(0.5f);
 		rainMusic.setLooping(true);
 	    rainMusic.play();
 	      
-	    // Crear la primera gota
 	    spawnCollectible(); 
 	}
 	
-	/**
-	 * Crea un nuevo collectible usando la Fábrica (GM2.4).
-	 * Ya no hay 'new DropBlue()' aquí, todo pasa por dropFactory.
-	 */
 	private void spawnCollectible() {
 		if (spawnPaused) return;
+		
+		// Si el boss está activo, reducimos la lluvia normal para centrarse en el combate
+		if (boss.isActive()) {
+			if (MathUtils.random(1, 100) > 10) return; 
+		}
 
 		float x = MathUtils.random(0, 800-64);
 		float y = 480;
 		
 		Collectible newDrop = null;
-		int type = MathUtils.random(1, 100); // Probabilidad 1-100
+		int type = MathUtils.random(1, 100); 
 		
-		if (type <= 40) { // 40% Gota Azul
-			newDrop = dropFactory.createDrop("BLUE", x, y);
-		} else if (type <= 70) { // 30% Gota Negra
-			newDrop = dropFactory.createDrop("BLACK", x, y);
-		} else if (type <= 90) { // 20% Gota Gris
-			newDrop = dropFactory.createDrop("GRAY", x, y); 
-		} else { // 10% Gota Roja
-			newDrop = dropFactory.createDrop("RED", x, y);
-		}
+		if (type <= 40) newDrop = dropFactory.createDrop("BLUE", x, y);
+		else if (type <= 70) newDrop = dropFactory.createDrop("BLACK", x, y);
+		else if (type <= 90) newDrop = dropFactory.createDrop("GRAY", x, y); 
+		else newDrop = dropFactory.createDrop("RED", x, y);
 		
-		if (newDrop != null) {
-			collectibles.add(newDrop);
-		}
+		if (newDrop != null) collectibles.add(newDrop);
 		lastDropTime = TimeUtils.nanoTime();
 	}
 	
-	/**
-	 * Spawnea un Power-Up usando la Fábrica (GM2.4).
-	 */
 	private void spawnPowerUp() {
 		float x = MathUtils.random(0, 800-64);
 		float y = 480;
 		Collectible powerUp;
 
-		if (MathUtils.randomBoolean()) {
-			powerUp = dropFactory.createDrop("POWER_SHIELD", x, y);
-		} else {
-			powerUp = dropFactory.createDrop("POWER_CLEAN", x, y);
-		}
+		if (MathUtils.randomBoolean()) powerUp = dropFactory.createDrop("POWER_SHIELD", x, y);
+		else powerUp = dropFactory.createDrop("POWER_CLEAN", x, y);
 		
-		if (powerUp != null) {
-		    collectibles.add(powerUp);
-		}
+		if (powerUp != null) collectibles.add(powerUp);
 	}
 	
 	private void checkInput() {
-		if (Gdx.input.isKeyJustPressed(Input.Keys.G)) {
-			godModeToggle.toggle();
-		}
-		// Debug: Spawneamos poderes manualmente para probar
-		if (Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-			powerManager.addPower(new PowerShield());
-		}
-		if (Gdx.input.isKeyJustPressed(Input.Keys.C)) {
-			powerManager.addPower(new PowerCleanScreen());
-		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.G)) godModeToggle.toggle();
+		// Debug cheats
+		if (Gdx.input.isKeyJustPressed(Input.Keys.S)) powerManager.addPower(new PowerShield());
+		if (Gdx.input.isKeyJustPressed(Input.Keys.C)) powerManager.addPower(new PowerCleanScreen());
+		// Cheat para invocar al boss inmediatamente
+		if (Gdx.input.isKeyJustPressed(Input.Keys.B) && !boss.isActive()) boss.spawn();
 	}
 	
-	private void checkPowerUpSpawn() {
+	private void checkGameEvents() {
+		// Spawneo de PowerUps
 		if (tarro.getPuntos() >= nextPowerUpScore) {
 			spawnPowerUp();
 			nextPowerUpScore += 500; 
+		}
+		
+		// INVOCAR BOSS: A los 200 puntos
+		if (tarro.getPuntos() >= 200 && !boss.isActive() && !bossDefeated) {
+			boss.spawn();
 		}
 	}
 
@@ -159,51 +141,87 @@ public class GameScreen implements Screen, GameContext {
 		batch.setProjectionMatrix(camera.combined);
 		
 		checkInput();
-		checkPowerUpSpawn();
-		
-		// Actualizar PowerManager (GM2.3 Strategy)
+		checkGameEvents();
 		powerManager.update(delta);
+		
+		// Lógica del Boss: Movimiento y Ataque
+		if (boss.isActive()) {
+			// 1. Actualizar movimiento del Boss
+			boss.update(delta); 
+			
+			// 2. Intentar atacar (si ha pasado el tiempo)
+			// Esto devuelve un objeto Collectible (gota negra) si ataca, o null si no.
+			Collectible projectile = boss.tryToAttack(dropFactory);
+			
+			if (projectile != null) {
+				// ¡Importante! Añadimos el proyectil a la lista del juego para que se dibuje y mueva
+				collectibles.add(projectile);
+			}
+		}
 		
 		batch.begin();
 		
-		font.draw(batch, "Gotas totales: " + tarro.getPuntos(), 5, 475);
-		font.draw(batch, "Vidas : " + tarro.getVidas(), 670, 475);
-		font.draw(batch, "HighScore : " + game.getHigherScore(), camera.viewportWidth/2-50, 475);
+		font.draw(batch, "Puntos: " + tarro.getPuntos(), 5, 475);
+		font.draw(batch, "Vidas: " + tarro.getVidas(), 670, 475);
+		font.draw(batch, "HighScore: " + game.getHigherScore(), camera.viewportWidth/2-50, 475);
+		
+		// Dibujar vida del Boss si está activo
+		if (boss.isActive()) {
+			font.setColor(1, 0, 0, 1); // Rojo para el boss
+			font.draw(batch, "REY TORMENTA HP: " + boss.getHealth(), camera.viewportWidth/2 - 60, 450);
+			font.setColor(1, 1, 1, 1); // Blanco normal
+		}
 		
 		if (!tarro.estaHerido()) {
 	        tarro.actualizarMovimiento();
 		}
 		
-		// Spawneo de gotas
 		if(TimeUtils.nanoTime() - lastDropTime > 800000000) spawnCollectible(); 
 		
-		// --- BUCLE PRINCIPAL DE JUEGO ---
+		// Bucle de colisiones y lógica de gotas
 		Iterator<Collectible> iter = collectibles.iterator();
 		while (iter.hasNext()) {
 			Collectible drop = iter.next();
 			drop.update(delta);
 			
-			// Si cae al suelo
 			if(drop.getY() + 64 < 0) { 
 				iter.remove();
 			}
-			// Si colisiona con el tarro
 			else if(drop.overlaps(tarro.getArea())) {
-                // --- GM2.2: TEMPLATE METHOD ---
-                // Llamamos a collect(). La gota misma decide qué sonido hacer 
-                // y qué efecto aplicar (vida, puntos, poder).
-				drop.collect(this); 
-				iter.remove();
+				// --- MECÁNICA ESPECIAL: REFLEJAR ATAQUE ---
+				// Si es una gota negra (ataque) y tenemos ESCUDO activo...
+				if (boss.isActive() && powerManager.isShieldActive() && drop.getTypeId().equals("BLACK")) {
+					// Reflejamos el daño al Boss
+					boss.takeDamage(1);
+					
+					// Usamos un sonido para el rebote (reutilizamos el de la gota buena)
+					Assets.getInstance().manager.get("drop.wav", Sound.class).play();
+					iter.remove();
+					
+					// Si el Boss muere
+					if (!boss.isActive()) {
+						bossDefeated = true;
+						tarro.sumarPuntos(1000); // Bonus enorme
+						cleanScreen(); // Limpiar proyectiles restantes
+					}
+				} else {
+					// Comportamiento normal (Template Method)
+					drop.collect(this); 
+					iter.remove();
+				}
 			} else {
 				drop.draw(batch);
 			}
 		}
 		
+		// Dibujar entidades
 		tarro.dibujar(batch);
+		if (boss.isActive()) {
+			boss.draw(batch);
+		}
 
 		batch.end();
 		
-		// Verificar Game Over
 		if (tarro.getVidas() <= 0 && !godModeToggle.isActive()) {
 			if (game.getHigherScore() < tarro.getPuntos())
 	    		  game.setHigherScore(tarro.getPuntos());  
@@ -214,8 +232,7 @@ public class GameScreen implements Screen, GameContext {
 	}
 
 	@Override
-	public void resize(int width, int height) {
-	}
+	public void resize(int width, int height) {}
 
 	@Override
 	public void show() {
@@ -223,8 +240,7 @@ public class GameScreen implements Screen, GameContext {
 	}
 
 	@Override
-	public void hide() {
-	}
+	public void hide() {}
 
 	@Override
 	public void pause() {
@@ -233,62 +249,34 @@ public class GameScreen implements Screen, GameContext {
 	}
 
 	@Override
-	public void resume() {
-	}
+	public void resume() {}
 
 	@Override
 	public void dispose() {
       tarro.destruir();
-      // Los assets se liberan en el Singleton Assets.dispose(), no aquí.
 	}
 	
-	// --- IMPLEMENTACIÓN DE INTERFAZ GAMECONTEXT (GM1.6) ---
-
-	@Override
-	public void sumarPuntaje(int puntos) {
-		tarro.sumarPuntos(puntos); 
-	}
-
-	@Override
-	public void restarPuntaje(int puntos) {
-		tarro.restarPuntos(puntos);
-	}
-
-	@Override
-	public void perderVida(int vidas) {
-		tarro.dañar();
-	}
-
-	@Override
-	public void ganarVida(int vidas) {
-		tarro.ganarVida(vidas);
-	}
-
-	@Override
-	public void setShieldActive(boolean active) {
-		tarro.setShieldActive(active);
-	}
-
+	// --- Implementación GameContext ---
+	@Override public void sumarPuntaje(int puntos) { tarro.sumarPuntos(puntos); }
+	@Override public void restarPuntaje(int puntos) { tarro.restarPuntos(puntos); }
+	@Override public void perderVida(int vidas) { tarro.dañar(); }
+	@Override public void ganarVida(int vidas) { tarro.ganarVida(vidas); }
+	@Override public void setShieldActive(boolean active) { tarro.setShieldActive(active); }
+	
 	@Override
 	public void cleanScreen() {
+		// Limpieza de pantalla (igual que antes)
 		int puntosGanados = 0;
 		int topePuntos = 200;
-		
 		Iterator<Collectible> iter = collectibles.iterator();
 		while (iter.hasNext()) {
 			Collectible drop = iter.next();
 			String type = drop.getTypeId();
-			
-			// Gota Roja es inmune al clean screen
-			if (type.equals("RED_LIFE")) {
-				continue;
-			}
-			
+			if (type.equals("RED_LIFE")) continue;
 			if (type.equals("BLUE") && puntosGanados < topePuntos) {
 				puntosGanados += 10; 
 				iter.remove();
 			}
-			
 			if (type.equals("BLACK") || type.equals("GRAY") || type.startsWith("POWER_UP")) {
 				iter.remove();
 			}
@@ -296,37 +284,15 @@ public class GameScreen implements Screen, GameContext {
 		tarro.sumarPuntos(Math.min(puntosGanados, topePuntos));
 	}
 
-	@Override
-	public void setGodMode(boolean active) {
-		tarro.setGodMode(active);
-	}
-
-	@Override
-	public void pausarSpawn(boolean pausa) {
-		this.spawnPaused = pausa;
-	}
-
-	@Override
-	public int getVidasActuales() {
-		return tarro.getVidas();
-	}
-
-	@Override
-	public int getPuntajeActual() {
-		return tarro.getPuntos();
-	}
-
-	@Override
-	public int getVidasMaximas() {
-		return tarro.getVidasMaximas();
-	}
+	@Override public void setGodMode(boolean active) { tarro.setGodMode(active); }
+	@Override public void pausarSpawn(boolean pausa) { this.spawnPaused = pausa; }
+	@Override public int getVidasActuales() { return tarro.getVidas(); }
+	@Override public int getPuntajeActual() { return tarro.getPuntos(); }
+	@Override public int getVidasMaximas() { return tarro.getVidasMaximas(); }
 	
 	@Override
 	public void activatePower(String powerId) {
-		if (powerId.equals("SHIELD")) {
-			powerManager.addPower(new PowerShield());
-		} else if (powerId.equals("CLEAN_SCREEN")) {
-			powerManager.addPower(new PowerCleanScreen());
-		}
+		if (powerId.equals("SHIELD")) powerManager.addPower(new PowerShield());
+		else if (powerId.equals("CLEAN_SCREEN")) powerManager.addPower(new PowerCleanScreen());
 	}
 }

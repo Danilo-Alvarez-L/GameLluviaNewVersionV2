@@ -10,7 +10,7 @@ import com.badlogic.gdx.audio.Sound; // Necesario para la variable Sound
  */
 public class DropBlue extends Collectible {
 
-    private static final int PUNTOS_GANADOS = 10;
+    private static final int PUNTOS_GANADOS = 50;
 
     public DropBlue(Texture texture, float x, float y) {
         super(texture, x, y, "BLUE");
