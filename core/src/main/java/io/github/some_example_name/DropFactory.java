@@ -1,52 +1,57 @@
 package io.github.some_example_name;
 
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.math.MathUtils;
 
-/**
- * Patrón Abstract Factory (o Factory Method centralizado).
- * Encapsula la creación de objetos Collectible para que GameScreen
- * no tenga que hacer 'new' directamente ni gestionar texturas individuales.
- * Cubre: GM2.4
- */
 public class DropFactory {
-    
-    // Referencias a las texturas (se obtienen del Singleton Assets)
-    private Texture dropTexture;
-    private Texture dropBadTexture;
-    private Texture dropGrayTexture;
-    private Texture dropRedTexture;
-    private Texture powerCleanTexture;
-    private Texture powerShieldTexture;
+    private Texture dropBlueImage;
+    private Texture dropBlackImage;
+    private Texture dropGrayImage;
+    private Texture dropRedImage;
+    private Texture dropShieldImage;
+    private Texture dropCleanImage;
+    private Texture bossProjectileTexture; 
 
     public DropFactory() {
-        // Obtener texturas UNA SOLA VEZ desde el Singleton
         Assets assets = Assets.getInstance();
-        this.dropTexture = assets.manager.get("drop.png", Texture.class);
-        this.dropBadTexture = assets.manager.get("dropBad.png", Texture.class);
-        this.dropGrayTexture = assets.manager.get("drop_gray.png", Texture.class);
-        this.dropRedTexture = assets.manager.get("drop_red_life.png", Texture.class);
-        this.powerCleanTexture = assets.manager.get("power_clean_screen.png", Texture.class);
-        this.powerShieldTexture = assets.manager.get("drop_shield.png", Texture.class);
+        dropBlueImage = assets.manager.get("drop.png", Texture.class);
+        dropBlackImage = assets.manager.get("dropBad.png", Texture.class);
+        dropGrayImage = assets.manager.get("drop_gray.png", Texture.class);
+        dropRedImage = assets.manager.get("drop_red_life.png", Texture.class);
+        dropShieldImage = assets.manager.get("drop_shield.png", Texture.class);
+        dropCleanImage = assets.manager.get("power_clean_screen.png", Texture.class);
+        
+        // Cargamos la textura del rayo
+        bossProjectileTexture = assets.manager.get("boss_projectile.png", Texture.class);
     }
 
-    /**
-     * Crea una gota basada en un tipo enumerado o string.
-     */
     public Collectible createDrop(String type, float x, float y) {
         switch (type) {
-            case "BLUE":
-                return new DropBlue(dropTexture, x, y);
-            case "BLACK":
-                return new DropBlack(dropBadTexture, x, y);
-            case "GRAY":
-                return new DropGray(dropGrayTexture, x, y);
-            case "RED":
-                return new LifeDropRed(dropRedTexture, x, y);
-            case "POWER_SHIELD":
-                return new ColleciblePowerUp(powerShieldTexture, x, y, "SHIELD");
-            case "POWER_CLEAN":
-                return new ColleciblePowerUp(powerCleanTexture, x, y, "CLEAN_SCREEN");
-            default:
+            case "BLUE": 
+                return new DropBlue(dropBlueImage, x, y);
+            
+            case "BLACK": 
+                // CORREGIDO: Se eliminó 'MathUtils.random(200, 350)' porque DropBlack no lo acepta
+                return new DropBlack(dropBlackImage, x, y);
+                
+            case "GRAY": 
+                // CORREGIDO: Se eliminó 'MathUtils.random(200, 350)' porque DropGray no lo acepta
+                return new DropGray(dropGrayImage, x, y);
+                
+            case "RED": 
+                return new LifeDropRed(dropRedImage, x, y);
+                
+            case "POWER_SHIELD": 
+                return new ColleciblePowerUp(dropShieldImage, x, y, "SHIELD");
+                
+            case "POWER_CLEAN": 
+                return new ColleciblePowerUp(dropCleanImage, x, y, "CLEAN_SCREEN");
+            
+            // El ataque del Boss
+            case "BOSS_PROJECTILE":
+                return new BossLightning(bossProjectileTexture, x - 15, y);
+            
+            default: 
                 return null;
         }
     }

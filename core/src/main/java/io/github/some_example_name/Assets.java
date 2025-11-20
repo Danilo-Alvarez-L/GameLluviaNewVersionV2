@@ -19,7 +19,7 @@ public class Assets {
     }
 
     public void load() {
-        // Texturas existentes
+        // Carga de texturas generales
         manager.load("drop.png", Texture.class);
         manager.load("dropBad.png", Texture.class);
         manager.load("drop_gray.png", Texture.class);
@@ -29,10 +29,13 @@ public class Assets {
         manager.load("drop_shield.png", Texture.class);
         manager.load("power_clean_screen.png", Texture.class);
         
-        // NUEVO: Textura del Boss
-        manager.load("boss.png", Texture.class); // Asegúrate de tener este archivo
+        // Carga de recursos del Boss
+        manager.load("boss.png", Texture.class); 
+        
+        // Nueva textura para el ataque de rayo
+        manager.load("boss_projectile.png", Texture.class);
 
-        // Sonidos y Música
+        // Carga de sonidos y música
         manager.load("drop.wav", Sound.class);
         manager.load("hurt.ogg", Sound.class);
         manager.load("soundgray.wav", Sound.class);

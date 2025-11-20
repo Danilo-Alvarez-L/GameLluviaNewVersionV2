@@ -16,31 +16,30 @@ public class Boss {
 
     // Temporizador para ataques
     private long lastAttackTime;
-    private long attackInterval = 1500000000L; // 1.5 segundos en nanosegundos
+    private long attackInterval = 1500000000L; // 1.5 segundos
 
     public Boss(Texture texture) {
         this.texture = texture;
-        this.maxHealth = 10; // Vida del Boss
+        this.maxHealth = 1; // Puedes subirle la vida si quieres que dure más
         this.health = maxHealth;
         this.active = false;
         
-        // Tamaño del Boss (ajustar según tu sprite, ej. 128x128)
+        // Tamaño del Boss (128x128)
         this.bounds = new Rectangle(800 / 2 - 64, 480 + 100, 128, 128); 
     }
 
     public void spawn() {
         this.active = true;
         this.health = maxHealth;
-        this.bounds.y = 350; // Baja a la pantalla
+        this.bounds.y = 350; // Altura a la que aparece en pantalla
         this.bounds.x = 800 / 2 - 64;
-        // Inicializamos el tiempo para que ataque pronto
         this.lastAttackTime = TimeUtils.nanoTime();
     }
 
     public void update(float delta) {
         if (!active) return;
 
-        // 1. Movimiento lateral (tipo Space Invaders)
+        // Movimiento lateral
         bounds.x += speed * direction * delta;
         
         // Rebotar en los bordes
@@ -52,36 +51,41 @@ public class Boss {
             bounds.x = 800 - bounds.width;
             direction = -1;
         }
-        
-        // Nota: Eliminamos la llamada interna a attack() que tenías antes
-        // porque ahora GameScreen llama a tryToAttack() explícitamente.
     }
     
-    /**
-     * Intenta realizar un ataque si ha pasado el tiempo suficiente.
-     * Devuelve el proyectil (Collectible) si ataca, o null si no.
-     */
     public Collectible tryToAttack(DropFactory factory) {
         if (!active) return null;
         
-        // Verificamos si pasó el tiempo de intervalo (1.5 segundos)
+        // Verificamos el tiempo de ataque
         if (TimeUtils.nanoTime() - lastAttackTime > attackInterval) {
-            lastAttackTime = TimeUtils.nanoTime(); // Reiniciamos el contador
+            lastAttackTime = TimeUtils.nanoTime();
             
-            // Dispara gota negra desde el centro del boss
-            float dropX = bounds.x + bounds.width / 2 - 24; 
-            float dropY = bounds.y - 48;
+            // El disparo sale del centro del Boss
+            float dropX = bounds.x + bounds.width / 2; 
+            float dropY = bounds.y;
             
-            return factory.createDrop("BLACK", dropX, dropY);
+            // Crea el rayo (BOSS_PROJECTILE)
+            return factory.createDrop("BOSS_PROJECTILE", dropX, dropY);
         }
         return null;
     }
 
+    // --- AQUÍ ESTÁ EL CAMBIO ---
     public void draw(SpriteBatch batch) {
         if (active) {
-            batch.draw(texture, bounds.x, bounds.y, bounds.width, bounds.height);
+            // Usamos la versión avanzada de draw para rotar la imagen
+            batch.draw(texture, 
+                bounds.x, bounds.y,             // Posición X, Y
+                bounds.width / 2, bounds.height / 2, // Punto de rotación (Centro de la imagen)
+                bounds.width, bounds.height,    // Ancho y Alto
+                1, 1,                           // Escala (1 = tamaño normal)
+                180,                            // ROTACIÓN: 180 grados (Boca abajo)
+                0, 0,                           // Coordenadas de textura (inicio)
+                texture.getWidth(), texture.getHeight(), // Coordenadas de textura (fin)
+                false, false);                  // No invertir horizontal/verticalmente
         }
     }
+    // ---------------------------
 
     public void takeDamage(int damage) {
         health -= damage;
