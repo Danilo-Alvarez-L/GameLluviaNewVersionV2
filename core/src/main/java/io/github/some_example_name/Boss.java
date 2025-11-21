@@ -53,7 +53,10 @@ public class Boss {
         }
     }
     
-    public Collectible tryToAttack(DropFactory factory) {
+    // --- CORRECCIÓN GM2.4 (Abstract Factory) ---
+    // Se actualiza la firma del método para aceptar la interfaz abstracta 'GameLevelFactory'.
+    // Esto desacopla al Boss de la implementación concreta de la fábrica.
+    public Collectible tryToAttack(GameLevelFactory factory) {
         if (!active) return null;
         
         // Verificamos el tiempo de ataque
@@ -64,13 +67,13 @@ public class Boss {
             float dropX = bounds.x + bounds.width / 2; 
             float dropY = bounds.y;
             
-            // Crea el rayo (BOSS_PROJECTILE)
-            return factory.createDrop("BOSS_PROJECTILE", dropX, dropY);
+            // Invocamos el método de fábrica específico para proyectiles del jefe.
+            return factory.createBossProjectile(dropX, dropY);
         }
         return null;
     }
+    // ---------------------------------------------
 
-    // --- AQUÍ ESTÁ EL CAMBIO ---
     public void draw(SpriteBatch batch) {
         if (active) {
             // Usamos la versión avanzada de draw para rotar la imagen
@@ -85,7 +88,6 @@ public class Boss {
                 false, false);                  // No invertir horizontal/verticalmente
         }
     }
-    // ---------------------------
 
     public void takeDamage(int damage) {
         health -= damage;

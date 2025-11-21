@@ -29,39 +29,44 @@ public class GameScreen implements Screen, GameContext {
     private boolean spawnPaused = false;
 	
     // --- PATRONES DE DISEÑO ---
-    private DropFactory dropFactory;
+    private GameLevelFactory levelFactory; 
 	private PowerManager powerManager;
 	private GodModeToggle godModeToggle;
 	
-	// --- AUDIO ---
+	// --- AUDIO E IMAGENES ---
 	private Music rainMusic;
 	private Sound hurtSound; 
+    
+    // NUEVO: Fondo del juego
+    private Texture background;
 
 	// --- PUNTUACIÓN Y BOSS ---
 	private int nextPowerUpScore = 500;
 	private Boss boss;
 	private boolean bossDefeated = false;
-	
-	// Variable para controlar el tiempo tras derrotar al boss
 	private long timeBossDefeated = 0;
 
-	public GameScreen(final GameLluviaNewVersionV2 game) {
+	public GameScreen(final GameLluviaNewVersionV2 game, GameLevelFactory factory) {
 		this.game = game;
         this.batch = game.getBatch();
         this.font = game.getFont();
 		  
-        // Cargar recursos desde el Singleton
+        // Cargar recursos
         rainMusic = Assets.getInstance().manager.get("rain.mp3", Music.class);
         hurtSound = Assets.getInstance().manager.get("hurt.ogg", Sound.class);
         
-        // Inicializar Fábrica y Managers
-        dropFactory = new DropFactory();
+        // NUEVO: Cargar fondo del juego
+        // Usamos isLoaded por seguridad
+        if (Assets.getInstance().manager.isLoaded("game_bg.png")) {
+            background = Assets.getInstance().manager.get("game_bg.png", Texture.class);
+        }
+        
+        this.levelFactory = factory;
         
         Texture bucketTexture = Assets.getInstance().manager.get("bucket.png", Texture.class);
         Texture shieldTexture = Assets.getInstance().manager.get("power_shield_effect.png", Texture.class);
         tarro = new Tarro(bucketTexture, hurtSound, shieldTexture);
         
-        // Inicializar Boss con su textura
         Texture bossTexture = Assets.getInstance().manager.get("boss.png", Texture.class);
         boss = new Boss(bossTexture);
          
@@ -81,25 +86,15 @@ public class GameScreen implements Screen, GameContext {
 	    spawnCollectible(); 
 	}
 	
+	// ... (spawnCollectible, spawnPowerUp, checkInput, checkGameEvents siguen igual) ...
 	private void spawnCollectible() {
 		if (spawnPaused) return;
-		
-		// Si el boss está activo, reducimos la lluvia normal
 		if (boss.isActive()) {
 			if (MathUtils.random(1, 100) > 10) return; 
 		}
-
 		float x = MathUtils.random(0, 800-64);
 		float y = 480;
-		
-		Collectible newDrop = null;
-		int type = MathUtils.random(1, 100); 
-		
-		if (type <= 40) newDrop = dropFactory.createDrop("BLUE", x, y);
-		else if (type <= 70) newDrop = dropFactory.createDrop("BLACK", x, y);
-		else if (type <= 90) newDrop = dropFactory.createDrop("GRAY", x, y); 
-		else newDrop = dropFactory.createDrop("RED", x, y);
-		
+		Collectible newDrop = levelFactory.createEnemy(x, y);
 		if (newDrop != null) collectibles.add(newDrop);
 		lastDropTime = TimeUtils.nanoTime();
 	}
@@ -107,20 +102,14 @@ public class GameScreen implements Screen, GameContext {
 	private void spawnPowerUp() {
 		float x = MathUtils.random(0, 800-64);
 		float y = 480;
-		Collectible powerUp;
-
-		if (MathUtils.randomBoolean()) powerUp = dropFactory.createDrop("POWER_SHIELD", x, y);
-		else powerUp = dropFactory.createDrop("POWER_CLEAN", x, y);
-		
+		Collectible powerUp = levelFactory.createPowerUp(x, y);
 		if (powerUp != null) collectibles.add(powerUp);
 	}
 	
 	private void checkInput() {
 		if (Gdx.input.isKeyJustPressed(Input.Keys.G)) godModeToggle.toggle();
-		// Debug cheats
 		if (Gdx.input.isKeyJustPressed(Input.Keys.S)) powerManager.addPower(new PowerShield());
 		if (Gdx.input.isKeyJustPressed(Input.Keys.C)) powerManager.addPower(new PowerCleanScreen());
-		// Cheat Boss
 		if (Gdx.input.isKeyJustPressed(Input.Keys.B) && !boss.isActive()) boss.spawn();
 	}
 	
@@ -129,7 +118,6 @@ public class GameScreen implements Screen, GameContext {
 			spawnPowerUp();
 			nextPowerUpScore += 500; 
 		}
-		
 		if (tarro.getPuntos() >= 200 && !boss.isActive() && !bossDefeated) {
 			boss.spawn();
 		}
@@ -147,13 +135,17 @@ public class GameScreen implements Screen, GameContext {
 		
 		if (boss.isActive()) {
 			boss.update(delta); 
-			Collectible projectile = boss.tryToAttack(dropFactory);
-			if (projectile != null) {
-				collectibles.add(projectile);
-			}
+			Collectible projectile = boss.tryToAttack(levelFactory);
+			if (projectile != null) collectibles.add(projectile);
 		}
 		
 		batch.begin();
+		
+		// --- NUEVO: DIBUJAR FONDO PRIMERO ---
+		// Se dibuja antes que el texto y los objetos
+		if (background != null) {
+            batch.draw(background, 0, 0, 800, 480);
+        }
 		
 		font.draw(batch, "Puntos: " + tarro.getPuntos(), 5, 475);
 		font.draw(batch, "Vidas: " + tarro.getVidas(), 670, 475);
@@ -171,7 +163,6 @@ public class GameScreen implements Screen, GameContext {
 		
 		if(TimeUtils.nanoTime() - lastDropTime > 800000000) spawnCollectible(); 
 		
-		// Bucle de colisiones
 		Iterator<Collectible> iter = collectibles.iterator();
 		while (iter.hasNext()) {
 			Collectible drop = iter.next();
@@ -181,27 +172,21 @@ public class GameScreen implements Screen, GameContext {
 				iter.remove();
 			}
 			else if(drop.overlaps(tarro.getArea())) {
-				
-				// --- AQUÍ ESTÁ LA CORRECCIÓN ---
-				// Antes decíamos: drop.getTypeId().equals("BLACK")
-				// Ahora decimos: drop.getTypeId().equals("BOSS_PROJECTILE")
 				if (boss.isActive() && powerManager.isShieldActive() && drop.getTypeId().equals("BOSS_PROJECTILE")) {
-					
-					// Reflejamos el daño al Boss
 					boss.takeDamage(1);
 					Assets.getInstance().manager.get("drop.wav", Sound.class).play();
 					iter.remove();
 					
-					// Si el Boss muere
 					if (!boss.isActive()) {
 						bossDefeated = true;
 						tarro.sumarPuntos(1000); 
 						cleanScreen(); 
+                        rainMusic.stop(); 
+                        Assets.getInstance().manager.get("boss_death.mp3", Sound.class).play();
 						timeBossDefeated = TimeUtils.nanoTime();
-						break; // Rompemos el bucle para evitar el crash
+						break; 
 					}
 				} else {
-					// Comportamiento normal (Te hace daño si no tienes escudo)
 					drop.collect(this); 
 					iter.remove();
 				}
@@ -217,11 +202,10 @@ public class GameScreen implements Screen, GameContext {
 
 		batch.end();
 		
-		// Transición a Victoria
 		if (bossDefeated) {
 			if (TimeUtils.nanoTime() - timeBossDefeated > 3000000000L) {
 				rainMusic.stop(); 
-				game.setScreen(new VictoryScreen(game));
+				game.setScreen(new VictoryScreen(game, levelFactory));
 				dispose(); 
 			}
 		}
@@ -229,12 +213,12 @@ public class GameScreen implements Screen, GameContext {
 		if (tarro.getVidas() <= 0 && !godModeToggle.isActive()) {
 			if (game.getHigherScore() < tarro.getPuntos())
 	    		  game.setHigherScore(tarro.getPuntos());  
-	    	  
-	    	  game.setScreen(new GameOverScreen(game));
+	    	  game.setScreen(new GameOverScreen(game, levelFactory));
 	    	  dispose();
 		}
 	}
 
+	// ... (resize, show, hide, pause, resume, dispose e implementaciones de GameContext igual que antes) ...
 	@Override
 	public void resize(int width, int height) {
 		camera.viewportWidth = 800;
@@ -253,7 +237,7 @@ public class GameScreen implements Screen, GameContext {
 	@Override
 	public void pause() {
 		rainMusic.stop();
-		game.setScreen(new PausaScreen(game, this)); 
+		game.setScreen(new PausaScreen(game, this, levelFactory)); 
 	}
 
 	@Override
@@ -264,7 +248,6 @@ public class GameScreen implements Screen, GameContext {
       tarro.destruir();
 	}
 	
-	// --- Implementación GameContext ---
 	@Override public void sumarPuntaje(int puntos) { tarro.sumarPuntos(puntos); }
 	@Override public void restarPuntaje(int puntos) { tarro.restarPuntos(puntos); }
 	@Override public void perderVida(int vidas) { tarro.dañar(); }

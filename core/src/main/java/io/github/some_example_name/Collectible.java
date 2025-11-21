@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.Rectangle;
  * Cubre: GM1.4 (Clase abstracta)
  * Cubre: GM1.6 (Encapsulamiento de campos)
  * Cubre: GM2.2 (Template Method)
+ * Cubre: GM2.3 (Strategy - Composición de estrategia de movimiento)
  */
 public abstract class Collectible {
 
@@ -16,12 +17,26 @@ public abstract class Collectible {
     protected Texture texture;
     private String typeId;
     private float speed = 200; // Velocidad de caída base
+    
+    // Referencia a la estrategia de movimiento actual
+    private MovementStrategy movementStrategy;
 
     public Collectible(Texture texture, float x, float y, String typeId) {
         this.texture = texture;
         this.typeId = typeId;
-        // Definimos el tamaño de colisión y dibujo en 64x64
+        // Definimos el tamaño de colisión y dibujo en 48x48
         this.bounds = new Rectangle(x, y, 48, 48); 
+        
+        // Asignamos la estrategia de movimiento por defecto (Caída normal)
+        this.movementStrategy = new NormalFallStrategy();
+    }
+
+    /**
+     * Permite cambiar la estrategia de movimiento en tiempo de ejecución.
+     * @param strategy La nueva estrategia de movimiento a aplicar.
+     */
+    public void setMovementStrategy(MovementStrategy strategy) {
+        this.movementStrategy = strategy;
     }
 
     // --- PATRÓN TEMPLATE METHOD (GM2.2) ---
@@ -29,7 +44,6 @@ public abstract class Collectible {
     /**
      * Método Plantilla (Template Method).
      * Define el esqueleto del algoritmo de recolección.
-     * Es 'final' para que las subclases no puedan cambiar el orden de los pasos.
      */
     public final void collect(GameContext ctx) {
         // Paso 1: Aplicar el efecto (Score, Vida, Poder)
@@ -41,7 +55,6 @@ public abstract class Collectible {
 
     /**
      * Operación Primitiva 1: Efecto específico de la gota.
-     * (Este reemplaza al antiguo onCollected)
      */
     protected abstract void applyEffect(GameContext ctx);
 
@@ -53,17 +66,18 @@ public abstract class Collectible {
     // ---------------------------------------
 
     /**
-     * Actualiza la posición de la gota (caída).
+     * Actualiza la posición de la gota delegando el cálculo a la estrategia de movimiento.
      */
     public void update(float delta) {
-        bounds.y -= speed * delta;
+        if (movementStrategy != null) {
+            movementStrategy.move(bounds, speed, delta);
+        }
     }
 
     /**
      * Dibuja la gota en pantalla.
      */
     public void draw(SpriteBatch batch) {
-        // Dibujamos con el tamaño definido en bounds
         batch.draw(texture, bounds.x, bounds.y, bounds.width, bounds.height);
     }
 

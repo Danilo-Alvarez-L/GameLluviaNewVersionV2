@@ -1,85 +1,89 @@
 package io.github.some_example_name;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import io.github.some_example_name.GameLluviaNewVersionV2;
-
-
 public class PausaScreen implements Screen {
 
-	private final GameLluviaNewVersionV2 game;
-	private GameScreen juego;
-	private SpriteBatch batch;	   
-	private BitmapFont font;
-	private OrthographicCamera camera;
+    final GameLluviaNewVersionV2 game;
+    private GameScreen currentGameScreen; 
+    private GameLevelFactory levelFactory;
+    
+    private SpriteBatch batch;
+    private BitmapFont font;
+    private OrthographicCamera camera;
+    
+    private Texture background;
 
-	public PausaScreen (final GameLluviaNewVersionV2 game, GameScreen juego) {
-		this.game = game;
-        this.juego = juego;
+    public PausaScreen(final GameLluviaNewVersionV2 game, GameScreen currentGameScreen, GameLevelFactory factory) {
+        this.game = game;
+        this.currentGameScreen = currentGameScreen;
+        this.levelFactory = factory;
+        
         this.batch = game.getBatch();
         this.font = game.getFont();
-		camera = new OrthographicCamera();
-		camera.setToOrtho(false, 800, 480);
-	}
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false, 800, 480);
+        
+        Assets assets = Assets.getInstance();
+        if (assets.manager.isLoaded("pause_bg.png")) {
+            background = assets.manager.get("pause_bg.png", Texture.class);
+        }
+    }
 
-	@Override
-	public void render(float delta) {
-		ScreenUtils.clear(0, 0, 1.0f, 0.5f);
+    @Override
+    public void render(float delta) {
+        ScreenUtils.clear(0, 0, 0.2f, 1);
 
-		camera.update();
-		batch.setProjectionMatrix(camera.combined);
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
 
-		batch.begin();
-		font.draw(batch, "Juego en Pausa ", 100, 150);
-		font.draw(batch, "Toca en cualquier lado para continuar !!!", 100, 100);
-		batch.end();
+        batch.begin();
+        
+        // 1. Fondo
+        if (background != null) {
+            batch.draw(background, 0, 0, 800, 480);
+        }
+        
+        // 2. Texto (Alineado arriba a la izquierda)
+        font.getData().setScale(1.5f, 1.5f);
+        
+        // Título pegado arriba
+        font.draw(batch, "JUEGO PAUSADO", 20, 460);
+        
+        // Opciones en lista hacia abajo
+        font.draw(batch, "Toca para CONTINUAR", 20, 400);
+        font.draw(batch, "Presiona 'R' para REINICIAR Nivel", 20, 360);
+        font.draw(batch, "Presiona 'M' para ir al MENU", 20, 320);
+        
+        batch.end();
 
-		if (Gdx.input.isTouched()) {
-			game.setScreen(juego);
-			dispose();
-		}
-	}
+        if (Gdx.input.isTouched()) {
+            game.setScreen(currentGameScreen);
+            dispose();
+        }
+        
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            game.setScreen(new GameScreen(game, levelFactory));
+            dispose();
+        }
+        
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            game.setScreen(new MainMenuScreen(game));
+            dispose();
+        }
+    }
 
-	@Override
-	public void show() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void resize(int width, int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void pause() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void resume() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void hide() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void dispose() {
-		// TODO Auto-generated method stub
-		
-	}
-
+    @Override public void show() {}
+    @Override public void resize(int width, int height) {}
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void hide() {}
+    @Override public void dispose() {}
 }
-

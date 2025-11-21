@@ -19,7 +19,7 @@ public class Assets {
     }
 
     public void load() {
-        // Carga de texturas generales
+        // --- Texturas Generales ---
         manager.load("drop.png", Texture.class);
         manager.load("dropBad.png", Texture.class);
         manager.load("drop_gray.png", Texture.class);
@@ -29,17 +29,26 @@ public class Assets {
         manager.load("drop_shield.png", Texture.class);
         manager.load("power_clean_screen.png", Texture.class);
         
-        // Carga de recursos del Boss
+        // --- Recursos del Boss ---
         manager.load("boss.png", Texture.class); 
-        
-        // Nueva textura para el ataque de rayo
         manager.load("boss_projectile.png", Texture.class);
 
-        // Carga de sonidos y música
+        // --- FONDOS DE PANTALLA ---
+        manager.load("menu_bg.png", Texture.class); 
+        manager.load("gameover_bg.png", Texture.class);
+        manager.load("victory_bg.png", Texture.class);
+        manager.load("pause_bg.png", Texture.class);
+        
+        // NUEVO: Fondo del juego principal
+        manager.load("game_bg.png", Texture.class);
+
+        // --- Audio ---
+        manager.load("intro.mp3", Music.class);
         manager.load("drop.wav", Sound.class);
         manager.load("hurt.ogg", Sound.class);
         manager.load("soundgray.wav", Sound.class);
         manager.load("rain.mp3", Music.class);
+        manager.load("boss_death.mp3", Sound.class);
     }
 
     public void dispose() {

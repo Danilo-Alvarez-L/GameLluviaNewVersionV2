@@ -14,31 +14,24 @@ public class GameLluviaNewVersionV2 extends Game {
         batch = new SpriteBatch();
         font = new BitmapFont(); // usa la fuente Arial por defecto de libGDX
 
-        // --- INICIO DE LA MODIFICACIÓN (Singleton GM2.1) ---
-        // 1. Llama al Singleton para poner a cargar todos los assets
+        // 1. Carga de Assets (Singleton)
         Assets.getInstance().load();
-        
-        // 2. Espera de forma bloqueante a que todo termine de cargar
-        // (En un juego más grande, aquí iría una pantalla de carga)
         Assets.getInstance().manager.finishLoading();
         
-        // 3. Ahora que todo está cargado, muestra el menú principal
+        // --- CORRECCIÓN IMPORTANTE ---
+        // No llamamos a GameScreen directo porque ahora requiere una fábrica.
+        // Llamamos al MainMenuScreen, que ya tiene la lógica para elegir nivel.
         this.setScreen(new MainMenuScreen(this));
-        // --- FIN DE LA MODIFICACIÓN ---
     }
 
     public void render() {
-        super.render(); // ¡Importante!
+        super.render(); 
     }
 
     public void dispose() {
         batch.dispose();
         font.dispose();
-        
-        // --- INICIO DE LA MODIFICACIÓN (Singleton GM2.1) ---
-        // 4. Llama al Singleton para liberar todos los assets
         Assets.getInstance().dispose();
-        // --- FIN DE LA MODIFICACIÓN ---
     }
 
     public SpriteBatch getBatch() {

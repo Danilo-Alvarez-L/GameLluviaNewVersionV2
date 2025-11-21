@@ -3,76 +3,69 @@ package io.github.some_example_name;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public class GameOverScreen implements Screen {
-	private final GameLluviaNewVersionV2 game;
-	private SpriteBatch batch;	   
+
+	final GameLluviaNewVersionV2 game;
+	private SpriteBatch batch;
 	private BitmapFont font;
 	private OrthographicCamera camera;
+    private GameLevelFactory levelFactory;
+    
+    private Texture background;
 
-	public GameOverScreen(final GameLluviaNewVersionV2 game) {
+	public GameOverScreen(final GameLluviaNewVersionV2 game, GameLevelFactory factory) {
 		this.game = game;
+        this.levelFactory = factory;
+        
         this.batch = game.getBatch();
         this.font = game.getFont();
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 800, 480);
+		
+		// Cargamos el fondo (usando isLoaded por seguridad)
+        Assets assets = Assets.getInstance();
+        if (assets.manager.isLoaded("gameover_bg.png")) {
+		    background = assets.manager.get("gameover_bg.png", Texture.class);
+        }
 	}
 
 	@Override
 	public void render(float delta) {
-		// Limpia la pantalla con un color azul oscuro
 		ScreenUtils.clear(0, 0, 0.2f, 1);
-		
+
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 
 		batch.begin();
-		// Dibuja el texto de "Game Over" centrado
-		font.draw(batch, "GAME OVER ", 360, 300);
 		
-		// Muestra el puntaje más alto almacenado en la clase principal
-		font.draw(batch, "Récord actual: " + game.getHigherScore(), 340, 250);
+		// 1. Fondo
+		if (background != null) {
+            batch.draw(background, 0, 0, 800, 480);
+        }
 		
-		// Dibuja las instrucciones para reiniciar
-		font.draw(batch, "Toca en cualquier lado para reiniciar.", 260, 150);
-		batch.end();
+		// 2. Texto (Alineado arriba a la izquierda)
+        font.getData().setScale(1.5f, 1.5f);
+        
+		font.draw(batch, "GAME OVER", 20, 460);
+		font.draw(batch, "Toca en cualquier lugar para reiniciar!", 20, 400);
+		
+        batch.end();
 
-		// Detecta si el usuario toca la pantalla para volver al juego
 		if (Gdx.input.isTouched()) {
-			game.setScreen(new GameScreen(game));
+			game.setScreen(new GameScreen(game, levelFactory));
 			dispose();
 		}
 	}
 
-	@Override
-	public void show() {
-	}
-
-	@Override
-	public void resize(int width, int height) {
-		// Actualiza el viewport de la cámara para mantener la consistencia al redimensionar la ventana
-		camera.viewportWidth = 800;
-		camera.viewportHeight = 480;
-		camera.update();
-	}
-
-	@Override
-	public void pause() {
-	}
-
-	@Override
-	public void resume() {
-	}
-
-	@Override
-	public void hide() {
-	}
-
-	@Override
-	public void dispose() {
-		// No se liberan batch ni font aquí porque son gestionados por la clase Game principal
-	}
+	@Override public void show() {}
+	@Override public void resize(int width, int height) {}
+	@Override public void pause() {}
+	@Override public void resume() {}
+	@Override public void hide() {}
+	@Override public void dispose() {}
 }
