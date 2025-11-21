@@ -20,7 +20,7 @@ public class Boss {
 
     public Boss(Texture texture) {
         this.texture = texture;
-        this.maxHealth = 1; // Puedes subirle la vida si quieres que dure más
+        this.maxHealth = 5; // Puedes subirle la vida si quieres que dure más
         this.health = maxHealth;
         this.active = false;
         
