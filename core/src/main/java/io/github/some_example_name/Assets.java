@@ -39,7 +39,7 @@ public class Assets {
         manager.load("victory_bg.png", Texture.class);
         manager.load("pause_bg.png", Texture.class);
         
-        // NUEVO: Fondo del juego principal
+        // N Fondo del juego principal
         manager.load("game_bg.png", Texture.class);
 
         // --- Audio ---

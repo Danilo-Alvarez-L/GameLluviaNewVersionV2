@@ -41,7 +41,7 @@ public class GameScreen implements Screen, GameContext {
     private Texture background;
 
 	// --- PUNTUACIÓN Y BOSS ---
-	private int nextPowerUpScore = 500;
+	private int nextPowerUpScore = 100;
 	private Boss boss;
 	private boolean bossDefeated = false;
 	private long timeBossDefeated = 0;

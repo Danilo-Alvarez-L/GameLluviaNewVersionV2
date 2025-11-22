@@ -1,106 +1,107 @@
 # GameLluviaNewVersionV2
 
-Un juego de "atrapar la lluvia" donde el objetivo es controlar un tarro para conseguir el puntaje más alto. Se deben esquivar las gotas malas, atrapar las buenas y utilizar poderes especiales para sobrevivir.
+Un juego de acción y habilidad estilo "atrapar la lluvia". El objetivo principal es controlar un tarro para recolectar gotas buenas, esquivar las malas y sobrevivir el tiempo suficiente para enfrentarte al poderoso Rey Tormenta.
+
+> **Estado del Proyecto:** Versión Avanzada con Batalla de Jefe, PowerUps y Patrones de Diseño aplicados.
+
+---
+
+## Descripción del Juego
+
+En esta nueva versión, el juego no es infinito. Debes demostrar tu habilidad para alcanzar el puntaje necesario e invocar al jefe final.
+
+### Objetivo
+1.  **Recolección:** Atrapa las gotas azules para sumar puntos.
+2.  **Supervivencia:** Evita las gotas dañinas y proyectiles.
+3.  **Batalla de Jefe:** Al llegar a **200 Puntos**, aparecerá el **Rey Tormenta**.
+4.  **Victoria:** Debes utilizar el escudo y tus reflejos para devolver el daño o sobrevivir hasta derrotar al jefe.
+
+### PowerUps y Habilidades
+El juego cuenta con un sistema de poderes gestionado dinámicamente:
+* **Escudo (Shield):** Te protege del daño temporalmente. Si el jefe te ataca mientras tienes el escudo, ¡le devolverás el daño!
+* **Limpieza de Pantalla (Clean Screen):** Elimina todos los enemigos y gotas malas de la pantalla instantáneamente.
+* **Vida Extra:** Recupera salud perdida.
+
+---
+
+## Controles
+
+### Básicos
+| Tecla | Acción |
+| :--- | :--- |
+| **Flecha Izquierda** | Mover el tarro a la izquierda. |
+| **Flecha Derecha** | Mover el tarro a la derecha. |
+| **Pausa Automática** | El juego se pausa si cambias de ventana. |
+
+### Debug / Trucos (Development)
+Teclas habilitadas para pruebas y demostración:
+| Tecla | Acción |
+| :--- | :--- |
+| **G** | Activar/Desactivar "Modo Dios" (Invencibilidad). |
+| **S** | Activar manualmente el Escudo. |
+| **C** | Activar manualmente Limpiar Pantalla. |
+| **B** | Forzar la aparición del Boss (si no está activo). |
+
+---
+
+## Detalles Técnicos y Patrones de Diseño
+
+Este proyecto ha sido refactorizado para implementar buenas prácticas de programación orientada a objetos y patrones de diseño:
+
+* **Singleton:** Utilizado en la clase `Assets` para la gestión centralizada y eficiente de recursos (texturas, sonidos).
+* **Abstract Factory (`GameLevelFactory`):** Permite la creación de familias de objetos (gotas, enemigos, proyectiles del jefe) desacoplando la lógica de creación de la lógica del juego.
+* **Strategy:** Implementado para definir diferentes comportamientos de movimiento en los objetos que caen (caída normal, zig-zag, etc.).
+* **Composition & Encapsulation (`PowerManager`):** Gestión modular de los poderes activos, separando la lógica de duración y efectos de la clase principal del juego.
+
 ---
 
 ## Requisitos del Sistema
 
-Para compilar y ejecutar este proyecto, el entorno de desarrollo debe cumplir los siguientes requisitos.
-
-* **Java Development Kit (JDK) 11:** El proyecto está configurado para usar **Java 11**. Versiones más nuevas o más antiguas de Java pueden causar errores de compilación.
-* **IDE (Eclipse/IntelliJ)** o **Terminal** para ejecutar Gradle.
-
----
-
-## Configuración del Entorno (JDK 11)
-
-El proyecto ya está configurado para compilar con Java 11. No necesita modificar los archivos de compilación, pero sí debe asegurarse de que su IDE (Eclipse) esté configurado para usar JDK 11.
-
-### Opción 1: Configurar Eclipse (Recomendado)
-
-Si Eclipse se está ejecutando con una versión de Java diferente (como 8 o 17), debe configurarlo para que reconozca y compile este proyecto con JDK 11.
-
-**1. Añadir el JRE de JDK 11 a Eclipse:**
-* Vaya a `Window > Preferences`.
-* Navegue a `Java > Installed JREs`.
-* Haga clic en `Add...`, seleccione `Standard VM`, y navegue hasta la carpeta de instalación de su **JDK 11**.
-* Márquelo como el JRE por defecto (o selecciónelo para este proyecto).
-
-**2. Establecer el Compilador de Java en 11:**
-* Vaya a `Window > Preferences`.
-* Navegue a `Java > Compiler`.
-* En el menú desplegable "Compiler compliance level", seleccione **"11"**.
-* Haga clic en `Apply and Close`.
-
-**3. Importar el Proyecto:**
-* Vaya a `File > Import...`.
-* Seleccione `Gradle > Existing Gradle Project`.
-* Navegue hasta la carpeta raíz del proyecto y siga los pasos del asistente.
-
-### Opción 2: Configuración por Terminal (Línea de Comandos)
-
-Si prefiere ejecutar el juego sin un IDE, debe asegurarse de que su variable de entorno `JAVA_HOME` apunte a JDK 11.
-
-**1. Verificar su Versión de Java:**
-Abra una terminal y ejecute `java -version`. Si no es la 11, configúrela.
-
-**2. Cambiar su JDK Activo (Ejemplo):**
-* **En Windows:** `set JAVA_HOME="C:\Program Files\Java\jdk-11.0.x"`
-* **En macOS/Linux:** `export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"`
+* **Java Development Kit (JDK):** Versión **11** (Requerido).
+* **Sistema Operativo:** Windows, macOS o Linux.
+* **Memoria:** Mínimo 512MB RAM libres.
 
 ---
 
-## Cómo Instalar y Ejecutar
+## Instalación y Ejecución
 
-Este proyecto utiliza **Gradle** para gestionar las dependencias. No necesita instalar Gradle manualmente, ya que se utiliza el *Gradle Wrapper* (`gradlew`) incluido en el repositorio.
+El proyecto utiliza **Gradle** con un Wrapper incluido, por lo que no necesitas instalar nada extra más que el JDK 11.
 
-**1. Clonar o Descargar el Repositorio:**
-```bash
-git clone [https://github.com/Danilo-Alvarez-L/GameLluviaNewVersionV2-main.git](https://github.com/Danilo-Alvarez-L/GameLluviaNewVersionV2-main.git)
-cd GameLluviaNewVersionV2-main
+### Opción 1: Ejecutar desde Terminal (Recomendado)
 
+1.  **Clonar el repositorio:**
+    ```bash
+    git clone [https://github.com/Danilo-Alvarez-L/GameLluviaNewVersionV2-main.git](https://github.com/Danilo-Alvarez-L/GameLluviaNewVersionV2-main.git)
+    cd GameLluviaNewVersionV2-main
+    ```
 
-2. Ejecutar el Juego:
+2.  **Ejecutar el juego:**
+    * **En Windows:**
+        ```bash
+        .\gradlew.bat lwjgl3:run
+        ```
+    * **En macOS/Linux:**
+        ```bash
+        chmod +x gradlew
+        ./gradlew lwjgl3:run
+        ```
 
-Desde Eclipse:
+### Opción 2: Importar en Eclipse
 
-Una vez importado el proyecto, busque el módulo lwjgl3.
+1.  Asegúrate de tener configurado el **JDK 11** en `Window > Preferences > Java > Installed JREs`.
+2.  Ve a `File > Import > Gradle > Existing Gradle Project`.
+3.  Selecciona la carpeta raíz del proyecto.
+4.  Una vez importado, navega a: `lwjgl3/src/main/java/.../Lwjgl3Launcher.java`.
+5.  Click derecho -> `Run As` -> `Java Application`.
 
-Navegue a lwjgl3/src/main/java/io/github/some_example_name/lwjgl3.
+---
 
-Haga clic derecho en Lwjgl3Launcher.java y seleccione Run As > Java Application.
+## Estructura del Proyecto (LibGDX)
 
-Desde la Terminal (Línea de Comandos): Asegúrese de que su JDK 11 esté activo (ver sección de configuración).
-
-En Windows:
-
-Bash
-
-.\gradlew.bat lwjgl3:run
-En macOS o Linux:
-
-Bash
-
-# (Solo la primera vez, para dar permisos de ejecución)
-chmod +x gradlew
-
-# Ejecutar el proyecto
-./gradlew lwjgl3:run
-Controles del Juego
-Flecha Izquierda: Mover el tarro a la izquierda.
-
-Flecha Derecha: Mover el tarro a la derecha.
-
-Pausa: El juego entra en modo de pausa (abriendo la PausaScreen) automáticamente cuando la ventana del juego pierde el foco (ej. al minimizar o cambiar de ventana).
-
-Controles de Depuración (Debug)
-G: Activa/Desactiva el "Modo Dios" (invencible).
-
-S: Activa el poder de Escudo manualmente.
-
-C: Activa el poder de Limpieza de Pantalla manually.
-
-Detalles Técnicos
-Motor de Juego: libGDX versión 1.12.1.
-
-Lenguaje: Java 11.
+* **core/**: Contiene toda la lógica del juego, clases, pantallas y mecánicas.
+* **lwjgl3/**: Contiene el lanzador para escritorio (PC/Mac/Linux).
+* **assets/**: Imágenes, sonidos y música.
+ ## LINK AL REPOSITORIO:
+https://github.com/Danilo-Alvarez-L/GameLluviaNewVersionV2.git
+---
+*Desarrollado con LibGDX y Java 11.*

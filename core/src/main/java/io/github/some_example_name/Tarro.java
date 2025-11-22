@@ -103,7 +103,12 @@ public class Tarro {
 		 
 		 // Dibuja el escudo si está activo
 		 if (shieldActive) {
-			batch.draw(shieldTexture, bucket.x, bucket.y, bucket.width, bucket.height);
+			float scale = 1.6f;
+			float shieldWidth  = bucket.width  * scale;
+			float shieldHeight = bucket.height * scale;
+			float shieldX = bucket.x + bucket.width  / 2f - shieldWidth  / 2f;
+			float shieldY = bucket.y + bucket.height / 2f - shieldHeight / 2f;
+			batch.draw(shieldTexture, shieldX, shieldY, shieldWidth, shieldHeight);
 		 }
 	   } 
 	   
